@@ -18,7 +18,17 @@ pub fn main() anyerror!void {
 /// --- Part One ---
 ///
 fn part1() !i32 {
-    return 0;
+    var increases: i32 = 0;
+    var lastDepth: i32 = 0xFFFF;
+    var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
+    while (lines.next()) |line| {
+        var depth = try std.fmt.parseInt(i32, line, 10);
+        if (depth > lastDepth) {
+            increases += 1;
+        }
+        lastDepth = depth;
+    }
+    return increases;
 }
 
 test "day01.part1" {
@@ -29,7 +39,25 @@ test "day01.part1" {
 /// --- Part Two ---
 ///
 fn part2() !i32 {
-    return 0;
+    var d1: i32 = 0;
+    var d2: i32 = 0;
+    var d3: i32 = 0;
+    var increases: i32 = 0;
+    var depth: i32 = 0;
+    var lastDepth: i32 = 0;
+    var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
+    while (lines.next()) |line| {
+        var d4 = try std.fmt.parseInt(i32, line, 10);
+        depth += d4 - d1;
+        if (d1 > 0 and depth > lastDepth) {
+            increases += 1;
+        }
+        d1 = d2;
+        d2 = d3;
+        d3 = d4;
+        lastDepth = depth;
+    }
+    return increases;
 }
 
 test "day01.part2" {
