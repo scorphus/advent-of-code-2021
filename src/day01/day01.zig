@@ -19,14 +19,14 @@ pub fn main() anyerror!void {
 ///
 fn part1() !i32 {
     var increases: i32 = 0;
-    var lastDepth: i32 = 0xFFFF;
+    var last_depth: i32 = 0xFFFF;
     var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
     while (lines.next()) |line| {
         var depth = try std.fmt.parseInt(i32, line, 10);
-        if (depth > lastDepth) {
+        if (depth > last_depth) {
             increases += 1;
         }
-        lastDepth = depth;
+        last_depth = depth;
     }
     return increases;
 }
@@ -44,18 +44,18 @@ fn part2() !i32 {
     var d3: i32 = 0;
     var increases: i32 = 0;
     var depth: i32 = 0;
-    var lastDepth: i32 = 0;
+    var last_depth: i32 = 0;
     var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
     while (lines.next()) |line| {
         var d4 = try std.fmt.parseInt(i32, line, 10);
         depth += d4 - d1;
-        if (d1 > 0 and depth > lastDepth) {
+        if (d1 > 0 and depth > last_depth) {
             increases += 1;
         }
         d1 = d2;
         d2 = d3;
         d3 = d4;
-        lastDepth = depth;
+        last_depth = depth;
     }
     return increases;
 }
