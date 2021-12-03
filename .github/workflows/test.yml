@@ -1,0 +1,19 @@
+name: Test all days
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - name: Run tests
+        run: |
+          for d in $(seq -f "%02g" 25)
+          do
+            echo "Day $d:"
+            zig build day$d-test
+          done

@@ -32,7 +32,8 @@ fn part1() !i32 {
 }
 
 test "day01.part1" {
-    try testing.expectEqual(0, comptime try part1());
+    @setEvalBranchQuota(200_000);
+    try testing.expectEqual(1446, comptime try part1());
 }
 
 ///
@@ -61,5 +62,6 @@ fn part2() !i32 {
 }
 
 test "day01.part2" {
-    try testing.expectEqual(0, comptime try part2());
+    @setEvalBranchQuota(200_000);
+    try testing.expectEqual(1486, comptime try part2());
 }

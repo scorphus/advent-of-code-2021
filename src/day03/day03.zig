@@ -41,7 +41,7 @@ fn part1() !u64 {
 }
 
 test "day03.part1" {
-    try testing.expectEqual(0, comptime try part1());
+    try testing.expectEqual(@as(u64, 3985686), try part1());
 }
 
 ///
@@ -56,7 +56,7 @@ fn part2() !u64 {
 }
 
 test "day03.part2" {
-    try testing.expectEqual(0, comptime try part2());
+    try testing.expectEqual(@as(u64, 2555739), try part2());
 }
 
 fn readReport(whole_input: []const u8) ![][]const u8 {
