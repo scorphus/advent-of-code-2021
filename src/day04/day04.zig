@@ -20,53 +20,69 @@ pub fn main() anyerror!void {
 }
 
 ///
+/// Bingo is the representation of a bingo with sets of numbers and boards
+///
+const Bingo = struct {
+    numbers: [num_numbers]u8,
+    boards: [num_boards][num_numbers]u8,
+    boards_sum: [num_boards]u16,
+    rows_marks: [num_boards][board_size]u8,
+    cols_marks: [num_boards][board_size]u8,
+
+    pub fn init() Bingo {
+        return Bingo{
+            .numbers = [_]u8{0} ** num_numbers,
+            .boards = [_][num_numbers]u8{[_]u8{255} ** num_numbers} ** num_boards,
+            .boards_sum = [_]u16{0} ** num_boards,
+            .rows_marks = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards,
+            .cols_marks = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards,
+        };
+    }
+
+    pub fn setNumber(self: *Bingo, index: usize, number: u8) void {
+        self.numbers[index] = number;
+    }
+
+    pub fn setBoardCell(self: *Bingo, board: usize, row: u8, col: u8, number: u8) void {
+        self.boards[board][number] = row * board_size + col;
+        self.boards_sum[board] += number;
+    }
+
+    ///
+    /// winnerScore marks numbers on all boards until one of them wins, returning its score
+    ///
+    pub fn winnerScore(self: *Bingo) u16 {
+        for (self.numbers) |n| {
+            return self.winnerBoardScore(n) orelse continue;
+        }
+        unreachable;
+    }
+
+    fn winnerBoardScore(self: *Bingo, number: u8) ?u16 {
+        for (self.boards) |board, b| {
+            if (board[number] < 255 and self.boardWins(b, number)) {
+                return self.boards_sum[b] * number;
+            }
+        }
+        return null;
+    }
+
+    fn boardWins(self: *Bingo, board: usize, number: u8) bool {
+        self.boards_sum[board] -= number;
+        self.rows_marks[board][self.boards[board][number] / board_size] += 1;
+        self.cols_marks[board][self.boards[board][number] % board_size] += 1;
+        const rows_marked = self.rows_marks[board][self.boards[board][number] / board_size];
+        const cols_marked = self.cols_marks[board][self.boards[board][number] % board_size];
+        return rows_marked == board_size or cols_marked == board_size;
+    }
+};
+
+///
 /// --- Part One ---
 ///
 fn part1() !i32 {
-    var numbers = [_]u8{0} ** num_numbers;
-    var boards = [_][num_numbers]u8{[_]u8{255} ** num_numbers} ** num_boards;
-    var board_sum = [_]u16{0} ** num_boards;
-    var rows = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards;
-    var cols = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards;
-    var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
-    var block_count: u8 = 0;
-    while (lines.next()) |line| : (block_count += 1) {
-        if (block_count == 0) {
-            var numbers_iter = std.mem.split(u8, line, ",");
-            var number_count: u8 = 0;
-            while (numbers_iter.next()) |number| : (number_count += 1) {
-                numbers[number_count] = try std.fmt.parseInt(u8, number, 10);
-            }
-        } else {
-            var r: u8 = 0;
-            while (r < board_size) : (r += 1) {
-                var row_str = lines.next() orelse "";
-                var row_iter = std.mem.split(u8, row_str, " ");
-                var c: u8 = 0;
-                while (row_iter.next()) |cell_str| {
-                    var cell: u8 = std.fmt.parseInt(u8, cell_str, 10) catch continue;
-                    boards[block_count - 1][cell] = r * board_size + c;
-                    board_sum[block_count - 1] += cell;
-                    c += 1;
-                }
-            }
-        }
-    }
-    for (numbers) |n| {
-        for (boards) |board, b| {
-            if (board[n] < 255) {
-                board_sum[b] -= n;
-                rows[b][board[n] / board_size] += 1;
-                cols[b][board[n] % board_size] += 1;
-                var row_marked = rows[b][board[n] / board_size] == board_size;
-                var col_marked = cols[b][board[n] % board_size] == board_size;
-                if (row_marked or col_marked) {
-                    return board_sum[b] * n;
-                }
-            }
-        }
-    }
-    unreachable;
+    var bingo = try readBingo();
+    return bingo.winnerScore();
 }
 
 test "day04.part1" {
@@ -84,4 +100,32 @@ fn part2() !i32 {
 test "day04.part2" {
     @setEvalBranchQuota(200_000);
     try testing.expectEqual(0, comptime try part2());
+}
+
+///
+/// readBingo reads a bingo from the input
+///
+fn readBingo() !Bingo {
+    var bingo = Bingo.init();
+    var lines = std.mem.split(u8, std.mem.trimRight(u8, input, "\n"), "\n");
+    var numbers_iter = std.mem.split(u8, lines.next() orelse "", ",");
+    var number_count: u8 = 0;
+    while (numbers_iter.next()) |number| : (number_count += 1) {
+        bingo.setNumber(number_count, try std.fmt.parseInt(u8, number, 10));
+    }
+    var board_count: u8 = 0;
+    while (lines.next()) |_| : (board_count += 1) {
+        var r: u8 = 0;
+        while (r < board_size) : (r += 1) {
+            var row_str = lines.next() orelse "";
+            var row_iter = std.mem.split(u8, row_str, " ");
+            var c: u8 = 0;
+            while (row_iter.next()) |cell_str| {
+                var cell: u8 = std.fmt.parseInt(u8, cell_str, 10) catch continue;
+                bingo.setBoardCell(board_count, r, c, cell);
+                c += 1;
+            }
+        }
+    }
+    return bingo;
 }
