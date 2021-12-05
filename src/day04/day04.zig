@@ -8,7 +8,7 @@ const ArrayList = std.ArrayList;
 const input = @embedFile("./input.txt");
 
 const num_numbers = 100;
-const num_boards = 1000;
+const num_boards = 100;
 const board_size = 5;
 
 pub fn main() anyerror!void {
