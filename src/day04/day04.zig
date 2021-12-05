@@ -25,7 +25,7 @@ pub fn main() anyerror!void {
 const Bingo = struct {
     numbers: [num_numbers]u8,
     boards: [num_boards][num_numbers]u8,
-    boards_sum: [num_boards]u16,
+    boards_sum: [num_boards]u32,
     rows_marks: [num_boards][board_size]u8,
     cols_marks: [num_boards][board_size]u8,
 
@@ -33,7 +33,7 @@ const Bingo = struct {
         return Bingo{
             .numbers = [_]u8{0} ** num_numbers,
             .boards = [_][num_numbers]u8{[_]u8{255} ** num_numbers} ** num_boards,
-            .boards_sum = [_]u16{0} ** num_boards,
+            .boards_sum = [_]u32{0} ** num_boards,
             .rows_marks = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards,
             .cols_marks = [_][board_size]u8{[_]u8{0} ** board_size} ** num_boards,
         };
@@ -51,14 +51,34 @@ const Bingo = struct {
     ///
     /// winnerScore marks numbers on all boards until one of them wins, returning its score
     ///
-    pub fn winnerScore(self: *Bingo) u16 {
+    pub fn winnerScore(self: *Bingo) u32 {
         for (self.numbers) |n| {
             return self.winnerBoardScore(n) orelse continue;
         }
         unreachable;
     }
 
-    fn winnerBoardScore(self: *Bingo, number: u8) ?u16 {
+    ///
+    /// lastWinnerScore marks numbers on all boards until one of them wins, returning its score
+    ///
+    pub fn lastWinnerScore(self: *Bingo) u32 {
+        var remaining_boards: u16 = num_boards;
+        for (self.numbers) |n| {
+            for (self.boards) |board, b| {
+                if (board[n] == 255 or !self.boardWins(b, n)) {
+                    continue;
+                }
+                self.boards[b] = [_]u8{255} ** num_numbers;
+                remaining_boards -= 1;
+                if (remaining_boards == 0) {
+                    return self.boards_sum[b] * n;
+                }
+            }
+        }
+        unreachable;
+    }
+
+    fn winnerBoardScore(self: *Bingo, number: u8) ?u32 {
         for (self.boards) |board, b| {
             if (board[number] < 255 and self.boardWins(b, number)) {
                 return self.boards_sum[b] * number;
@@ -80,7 +100,7 @@ const Bingo = struct {
 ///
 /// --- Part One ---
 ///
-fn part1() !i32 {
+fn part1() !u32 {
     var bingo = try readBingo();
     return bingo.winnerScore();
 }
@@ -93,13 +113,14 @@ test "day04.part1" {
 ///
 /// --- Part Two ---
 ///
-fn part2() !i32 {
-    return 0;
+fn part2() !u32 {
+    var bingo = try readBingo();
+    return bingo.lastWinnerScore();
 }
 
 test "day04.part2" {
     @setEvalBranchQuota(200_000);
-    try testing.expectEqual(0, comptime try part2());
+    try testing.expectEqual(24628, comptime try part2());
 }
 
 ///
