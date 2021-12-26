@@ -1,5 +1,6 @@
 /// # Advent of Code - Day 15
 const std = @import("std");
+const AutoHashMap = std.AutoHashMap;
 const Order = std.math.Order;
 const parseInt = std.fmt.parseInt;
 const print = std.debug.print;
@@ -33,6 +34,7 @@ fn riskLevelLessThan(context: void, a: RiskLevel, b: RiskLevel) Order {
 }
 
 const RiskLevel = [3]u32;
+const Locations = AutoHashMap([2]u9, bool);
 const LowestRiskLevels = PriorityQueue(RiskLevel, void, riskLevelLessThan);
 
 pub fn main() anyerror!void {
@@ -48,7 +50,7 @@ pub fn main() anyerror!void {
 ///
 fn part1() !u32 {
     var density: [size][size]u8 = try readChitonDensity();
-    return try findLowestRiskLevel(&density, .{ 0, 0 }, .{ size - 1, size - 1 });
+    return try findLowestRiskLevel(&density, .{ 0, 0 }, .{ size - 1, size - 1 }, 1);
 }
 
 test "day15.part1" {
@@ -58,12 +60,13 @@ test "day15.part1" {
 ///
 /// --- Part Two ---
 ///
-fn part2() !i32 {
-    return 0;
+fn part2() !u32 {
+    var density: [size][size]u8 = try readChitonDensity();
+    return try findLowestRiskLevel(&density, .{ 0, 0 }, .{ 5 * size - 1, 5 * size - 1 }, 5);
 }
 
 test "day15.part2" {
-    try testing.expectEqual(0, comptime try part2());
+    try testing.expectEqual(@as(u32, 2838), try part2());
 }
 
 ///
@@ -84,10 +87,13 @@ fn readChitonDensity() ![size][size]u8 {
 ///
 /// findLowestRiskLevel returns the lowest risk level of a path from start to end
 ///
-fn findLowestRiskLevel(density: *[size][size]u8, start: [2]u8, end: [2]u8) !u32 {
+fn findLowestRiskLevel(density: *[size][size]u8, start: [2]u9, end: [2]u9, factor: u9) !u32 {
     var queue = LowestRiskLevels.init(gpa, {});
     defer queue.deinit();
+    var seen = Locations.init(gpa);
+    defer seen.deinit();
     try queue.add(RiskLevel{ 0, start[0], start[1] });
+    try seen.put(start, true);
     while (queue.count() > 0) {
         var least = queue.remove();
         var risk = least[0];
@@ -98,11 +104,12 @@ fn findLowestRiskLevel(density: *[size][size]u8, start: [2]u8, end: [2]u8) !u32 
         }
         inline for (DELTAS) |deltas| {
             if ((i != 0 or deltas[0] != -1) and (j != 0 or deltas[1] != -1)) {
-                var ni: u8 = @intCast(u8, @intCast(i16, i) + deltas[0]);
-                var nj: u8 = @intCast(u8, @intCast(i16, j) + deltas[1]);
-                if (ni < size and nj < size and density[ni][nj] < 10) {
-                    try queue.add(RiskLevel{ risk + density[ni][nj], ni, nj });
-                    density[ni][nj] = 10;
+                var ni: u9 = @intCast(u9, @intCast(i18, i) + deltas[0]);
+                var nj: u9 = @intCast(u9, @intCast(i18, j) + deltas[1]);
+                if (ni < size * factor and nj < size * factor and !seen.contains(.{ ni, nj })) {
+                    var r = (density[ni % size][nj % size] + ni / size + nj / size - 1) % 9 + 1;
+                    try queue.add(RiskLevel{ risk + r, ni, nj });
+                    try seen.put(.{ ni, nj }, true);
                 }
             }
         }
